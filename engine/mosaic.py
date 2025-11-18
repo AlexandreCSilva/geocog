@@ -32,8 +32,7 @@ class Mosaic:
     def load_aoi(self):
         gdf = gpd.read_file(self.aoi_path, driver="KML")
         geom = json.loads(gdf.to_json())["features"][0]["geometry"]
-        return ee.Geometry(geom)
-
+        return ee.Geometry(geom).buffer(2000)
 
     def build_collection(self):
         col = (

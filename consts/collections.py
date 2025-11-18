@@ -1,3 +1,5 @@
 COLLECTIONS = {
-    "MAPBIOMAS_COVERAGE": "projects/mapbiomas-public/assets/brazil/lulc/collection10/mapbiomas_brazil_collection10_coverage_v2"
+    "MAPBIOMAS_COVERAGE": { 
+        2024: "projects/mapbiomas-public/assets/brazil/lulc/collection10/mapbiomas_brazil_collection10_coverage_v2"
+    }
 }

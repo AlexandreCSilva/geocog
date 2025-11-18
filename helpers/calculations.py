@@ -34,7 +34,7 @@ def calculate_percentile(collection, bands):
         mosaic = combine_percentile(m50, m25, m75)
     
     elif count >= 4:
-        # Percentil para menos mosaicos
+        # Percentil para poucos mosaicos
         mosaic = percentile_mosaic(collection, bands, 40)
 
     else:
