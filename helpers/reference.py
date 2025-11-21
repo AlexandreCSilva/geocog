@@ -1,13 +1,7 @@
 import os
 import geemap
 import ee
-from consts import MAPBIOMAS_LAYERS, COLLECTIONS
-
-CLASS_IDS = {
-    "forest": 1,
-    "pasture": 2,
-    "agriculture": 3,
-}
+from consts import MAPBIOMAS_LAYERS, COLLECTIONS, LAYER_IDS
 
 def make_reference(): # to export the reference, add region
     selected_year = 2024
@@ -39,7 +33,7 @@ def make_reference(): # to export the reference, add region
     final_mask = ee.Image(0)
 
     for class_name, class_list in MAPBIOMAS_LAYERS.items():
-        class_id = CLASS_IDS[class_name]
+        class_id = LAYER_IDS[class_name]
 
         mask = mask_classes(base_mask, class_list)
         final_mask = final_mask.add(mask.multiply(class_id))

@@ -2,4 +2,9 @@
 venv
 .env
 !.env.example
+
 output/
+
+__pycache__/
+*.py[cod]
+*$py.class

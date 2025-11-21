@@ -7,9 +7,9 @@ gee.initialize()
 CLASSIFICATION_BANDS = list(S2_BAND.values()) + ["ndvi", "ndwi"]
 
 mosaic_builder = Mosaic(
-    aoi_path = "cars/SP-3536901-59066243765040219D013B8B8A6538BC.kml",
-    start_date = "2025-08-01",
-    end_date = "2025-10-30",
+    aoi_path = "cars/MG-3152808-F96C0657DCF24A42AB972775DEE67318.kml",
+    start_date = "2025-10-28",
+    end_date = "2025-11-18",
     classification_bands = CLASSIFICATION_BANDS,
 )
 
