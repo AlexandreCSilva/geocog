@@ -3,7 +3,7 @@ import ee
 import geemap
 import geopandas as gpd
 import json
-from helpers.indices import add_ndvi, add_ndwi
+from helpers.indices import add_index
 from helpers.visualization import auto_vis_params, generate_thumb
 from helpers.utils import rename_bands, mask_clouds
 from helpers.calculations import calculate_percentile
@@ -42,8 +42,7 @@ class Mosaic:
               .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
               .map(rename_bands)
               .map(mask_clouds)
-              .map(add_ndvi)
-              .map(add_ndwi)
+              .map(add_index)
         )
         
         return col

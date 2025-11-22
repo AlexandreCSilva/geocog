@@ -10,10 +10,11 @@ def percentile_mosaic(collection, bands, p):
 # Pega os mosaicos de percentil e usa os de 25% e 75% para preencher lacunas na mediana (50%)
 def combine_percentile(p50, p25, p75):
     def strip(i):
-        n = i.bandNames().map(lambda x: ee.String(x).replace("_p",""))
-    
+        n = i.bandNames().map(
+            lambda x: ee.String(x).replace('_p[0-9]+', '', 'g')
+        )
         return i.rename(n)
-    
+        
     p50s = strip(p50)
     p25s = strip(p25)
     p75s = strip(p75)

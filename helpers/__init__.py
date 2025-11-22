@@ -1,4 +1,4 @@
-from .indices import add_ndvi, add_ndwi
+from .indices import add_index
 from .visualization import generate_thumb, auto_vis_params
 from .reference import make_reference
 from .calculations import calculate_percentile
