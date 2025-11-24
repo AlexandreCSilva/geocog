@@ -15,6 +15,7 @@ class Mosaic:
         start_date,
         end_date,
         classification_bands,
+        extra_index,
         vizualization_bands = ["swir1","nir","red"],
         output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output"),
     ):
@@ -23,6 +24,7 @@ class Mosaic:
         self.end_date = end_date
         self.vizualization_bands = vizualization_bands
         self.classification_bands = classification_bands
+        self.extra_index = extra_index
         self.output_dir = output_dir
 
         os.makedirs(output_dir, exist_ok=True)
@@ -42,7 +44,7 @@ class Mosaic:
               .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
               .map(rename_bands)
               .map(mask_clouds)
-              .map(add_index)
+              .map( lambda img: add_index(img, self.extra_index))
         )
         
         return col

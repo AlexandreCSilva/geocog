@@ -24,11 +24,32 @@ class Classifier:
 
         os.makedirs(output_dir, exist_ok=True)
 
+    def clusterizing(self):
+        bands_for_kmeans = self.classification_bands
+
+        training = self.image.select(bands_for_kmeans).sample(
+            region=self.region,
+            scale=10,
+            numPixels=5000,
+            seed=13,
+            tileScale=4
+        )
+
+        clusterer = ee.Clusterer.wekaKMeans(4).train(training)
+
+        clustered = self.image.select(bands_for_kmeans).cluster(clusterer)
+
+        return clustered.rename("cluster")
+
     def classify(self):
         if not self.reference:
             self.reference = make_reference()
+
+        cluster_band = self.clusterizing()
+        train_image = self.image.addBands(cluster_band)
+        training_bands = self.classification_bands
         
-        train = self.image.select(self.classification_bands).addBands(self.reference)
+        train = self.image.select(training_bands).addBands(self.reference)
 
         samples = train.sample(
             region=self.region,

@@ -1,4 +1,4 @@
-def add_index(img, index_list=["ndvi", "ndwi", "ndbi", "gcvi", "bsi", "glcm"]):
+def add_index(img, index_list):
     bands = {
         "RED": img.select("red"),
         "GREEN": img.select("green"),

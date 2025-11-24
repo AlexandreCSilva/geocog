@@ -3,14 +3,12 @@ import geemap
 import ee
 from consts import MAPBIOMAS_LAYERS, COLLECTIONS, LAYER_IDS
 
-def make_reference(): # to export the reference, add region
-    selected_year = 2024
+def make_reference(year = 2024, region=None):
     base_mask = (
-        ee.Image(COLLECTIONS["MAPBIOMAS_COVERAGE"][selected_year])
-        .select(f"classification_{selected_year}")
+        ee.Image(COLLECTIONS["MAPBIOMAS_COVERAGE"][year])
+        .select(f"classification_{year}")
     )
-
-    # Salva o recorte de referencia (opcional)
+    
     def export_reference(region, reference):
         mapbiomas_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(__file__)), "output"), "mapbiomas.tif")
 
@@ -22,7 +20,9 @@ def make_reference(): # to export the reference, add region
             file_per_band=False
         )
     
-    #export_reference(region=region, reference=base_mask)
+    # Salva o recorte de referencia (opcional)
+    if region:
+        export_reference(region=region, reference=base_mask)
 
     def mask_classes(img, class_list):
         mask = img.eq(class_list[0])

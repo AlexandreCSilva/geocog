@@ -3,7 +3,7 @@ import ee
 # Calcula o mosaico de percentil de uma coleçao para cada banda
 def percentile_mosaic(collection, bands, p):
     r = collection.select(bands).reduce(ee.Reducer.percentile([p]))
-    out = [r.select(f"{b}_p{p}").rename(f"{b}_p") for b in bands]
+    out = [r.select(f"{b}_p{p}").rename(f"{b}") for b in bands]
     
     return ee.Image.cat(out)
 

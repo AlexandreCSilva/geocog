@@ -1,10 +1,12 @@
-from engine import GEEManager, Mosaic, Classifier
+from engine import GEEManager, Mosaic, Classifier, Filtering
 from consts import S2_BAND
 
 gee = GEEManager()
 gee.initialize()
 
-CLASSIFICATION_BANDS = list(S2_BAND.values()) + ["ndvi", "ndwi", "ndbi", "gcvi", "bsi", "glcm"]
+EXTRA_BANDS = ["ndvi", "ndwi", "ndbi", "gcvi", "bsi"]
+
+CLASSIFICATION_BANDS = list(S2_BAND.values()) + EXTRA_BANDS
 
 if "glcm" in CLASSIFICATION_BANDS:
     CLASSIFICATION_BANDS.remove("glcm")
@@ -20,6 +22,7 @@ mosaic_builder = Mosaic(
     start_date = "2025-10-28",
     end_date = "2025-11-18",
     classification_bands = CLASSIFICATION_BANDS,
+    extra_index = EXTRA_BANDS
 )
 
 mosaic, collection = mosaic_builder.compute_mosaic()
@@ -37,11 +40,20 @@ image_classifier = Classifier(
     region=mosaic_builder.aoi
 )
 
-first_classified, region = image_classifier.classify()
+first_classified, _region = image_classifier.classify()
 
 image_classifier.reference = first_classified.rename("class")
 
-classified, _region = image_classifier.classify()
+classified, region = image_classifier.classify()
 
-# só para vizualização do mosaico (opcional)
-image_classifier.export(classified, region)
+# só para vizualização da classificação (opcional)
+#image_classifier.export(classified, region)
+
+filters = Filtering(
+    image = classified,
+)
+
+filtered_image = filters.spatial_filter()
+
+# só para vizualização da filtragem (opcional)
+filters.export(filtered_image, region)
