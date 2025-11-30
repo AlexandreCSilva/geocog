@@ -12,6 +12,7 @@ class Classifier:
             image,
             region,
             reference = None,
+            train_years = range(2018, 2024),
             output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output"),
         ):
         self.image = image
@@ -21,46 +22,35 @@ class Classifier:
         self.output_dir = output_dir
         self.region = region
         self.reference = reference
+        self.train_years = train_years
 
         os.makedirs(output_dir, exist_ok=True)
 
-    def clusterizing(self):
-        bands_for_kmeans = self.classification_bands
-
-        training = self.image.select(bands_for_kmeans).sample(
-            region=self.region,
-            scale=10,
-            numPixels=5000,
-            seed=13,
-            tileScale=4
-        )
-
-        clusterer = ee.Clusterer.wekaKMeans(4).train(training)
-
-        clustered = self.image.select(bands_for_kmeans).cluster(clusterer)
-
-        return clustered.rename("cluster")
-
     def classify(self):
         if not self.reference:
-            self.reference = make_reference()
+            self.reference = make_reference(years=self.train_years)
 
-        cluster_band = self.clusterizing()
-        train_image = self.image.addBands(cluster_band)
-        training_bands = self.classification_bands
-        
-        train = self.image.select(training_bands).addBands(self.reference)
+        image_ref = self.image.addBands(self.reference)
 
-        samples = train.sample(
-            region=self.region,
-            scale=10,
-            numPixels=self.train_pixels,
-            seed=23,
-            tileScale=4
-        )
+        samples_list = []
 
-        samples = samples.filter(ee.Filter.neq("class", 0))
-        
+        for year in self.train_years:
+            class_band = f"class_{year}"
+            
+            sample = image_ref.stratifiedSample(
+                numPoints=self.train_pixels,
+                classBand=class_band,
+                region=self.region,
+                scale=10,
+                geometries=False,
+            )
+            
+            sample = sample.map(lambda s: s.set("class", s.get(class_band)))
+
+            samples_list.append(sample)
+
+        samples = ee.FeatureCollection(samples_list).flatten()
+
         classification = ee.Classifier.smileRandomForest(self.trees).train(
             samples, "class", self.classification_bands
         )
@@ -68,7 +58,9 @@ class Classifier:
         # Logs de precisão da classificação (opcional)
         #self.log_precision(samples, classifier=classification)
 
-        return self.image.classify(classification), self.region
+        classified = self.image.classify(classification)
+
+        return classified, self.region
 
     def export(self, classified, region):
         out_path = os.path.join(self.output_dir, "classification.tif")

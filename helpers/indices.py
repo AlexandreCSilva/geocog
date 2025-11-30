@@ -1,3 +1,5 @@
+import ee
+
 def add_index(img, index_list):
     bands = {
         "RED": img.select("red"),
@@ -10,67 +12,80 @@ def add_index(img, index_list):
 
     def compute(index):
         match index:
-            # Diferença vegetal
-            # - Vegetação densa → valores altos
-            # - Agricultura rasa → valores médios
-            # - Solo exporto → valores baixos
-            # - Urbano → 0
             case "ndvi":
-                return img.expression("(NIR - RED) / (NIR + RED)", bands).rename("ndvi")
+                return img.normalizedDifference(['nir','red']).rename('ndvi')
 
-            # Diferença hídrica
-            # - Água pura → valores muito altos
-            # - Áreas irrigadas → valores altos
-            # - Vegetação seca → valores baixos
             case "ndwi":
-                return img.expression("(NIR - SWIR1) / (NIR + SWIR1)", bands).rename("ndwi")
+                return img.normalizedDifference(['nir','swir1']).rename('ndwi')
 
-            # Diferença de construções
-            # - Construções, galpões, telhas → valores altos
-            # - Vegetação → valores baixo
-            # - Água → valores negativo
+            case "nbr":
+                return img.normalizedDifference(['nir','swir2']).rename('nbr')
+
             case "ndbi":
-                return img.expression("(SWIR1 - NIR) / (SWIR1 + NIR)", bands).rename("ndbi")
-
-            # Índice de clorofila
-            # ajuda a separar agricultura de pastagem
+                return img.normalizedDifference(['swir1','nir']).rename("ndbi")
+            
+            case "gndvi":
+                return img.normalizedDifference(['nir','green']).rename("gndvi")
+            
             case "gcvi":
                 return img.expression("(NIR / GREEN) - 1", bands).rename("gcvi")
 
-            # Textura espacial da imagem
-            case "glcm":
-                texture_indexes = ["nir", "swir1", "ndvi", "ndbi", "bsi"]
-
-                glcm_list = []
-
-                for idx in texture_indexes:
-                    glcm_list.append(compute_glcm(idx))
-
-                if len(glcm_list) > 0:
-                    glcm = glcm_list[0]
-                    
-                    for band in glcm_list[1:]:
-                        glcm = glcm.addBands(band)
-                    
-                    return glcm
-
-            # índice de solo exposto
             case "bsi":
                 return img.expression("((SWIR1 + RED) - (NIR + BLUE)) / ((SWIR1 + RED) + (NIR + BLUE))", bands).rename("bsi")
 
+            case "evi2":
+                return img.expression("2.5 * (NIR - RED) / (NIR + 2.4 * RED + 1)", bands).rename("evi2")
+            
+            case "savi":
+                return img.expression("((NIR - RED) / (NIR + RED + 0.5)) * 1.5", bands).rename("savi")
+
         raise ValueError(f"Não foi possível calcular o índice: {index}.")
     
-    def compute_glcm(band):
-        glcm = img.select(band).multiply(100).toInt().glcmTexture(size=3)
-
-        return glcm.select([
-            f"{band}_contrast",
-            f"{band}_diss",
-            f"{band}_ent",
-            f"{band}_idm",
-        ])
-
     for idx in index_list:
         img = img.addBands(compute(idx))
 
     return img
+
+"""
+def period_mosaic_stats(col, bands, reducer_list=['median','min','max','stdDev']):
+    reducers = {
+        'median': ee.Reducer.median(),
+        'min': ee.Reducer.min(),
+        'max': ee.Reducer.max(),
+        'mean': ee.Reducer.mean(),
+        'stdDev': ee.Reducer.stdDev()
+    }
+
+    out_bands = []
+
+    for stat in reducer_list:
+        r = reducers.get(stat)
+        if r is None:
+            continue
+        reduced = col.select(bands).reduce(r)
+
+        for b in bands:
+            src_name = f"{b}_{stat}" if stat != 'median' else f"{b}_median"
+            out_bands.append(reduced.select([b]).rename(f"{b}_{stat}"))
+
+    if len(out_bands) == 0:
+        return None
+
+    return ee.Image.cat(out_bands)
+
+def build_dry_wet_index_stack(aoi, wet_col, dry_col, bands, stats=['median','min','max','stdDev']):
+    wet_stats_img = period_mosaic_stats(wet_col, bands, reducer_list=stats)
+    dry_stats_img = period_mosaic_stats(dry_col, bands, reducer_list=stats)
+
+    # prefix bands
+    def prefix(img, prefix_str):
+        names = img.bandNames()
+        new_names = names.map(lambda n: ee.String(prefix_str).cat('_').cat(ee.String(n)))
+        return img.rename(new_names)
+
+    wet_pref = prefix(wet_stats_img, 'wet')
+    dry_pref = prefix(dry_stats_img, 'dry')
+
+    combined = ee.Image.cat([wet_pref, dry_pref])
+    return combined
+"""

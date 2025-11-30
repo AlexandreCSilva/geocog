@@ -6,6 +6,7 @@ S2_BAND = {
     "B11": "swir1",
     "B12": "swir2",
     "QA60": "BQA",
+    "SCL": "SCL",
 }
 
 BANDS_MAP = {

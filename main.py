@@ -1,53 +1,38 @@
 from engine import GEEManager, Mosaic, Classifier, Filtering
 from consts import S2_BAND
+from helpers import interval
 
 gee = GEEManager()
 gee.initialize()
 
-EXTRA_BANDS = ["ndvi", "ndwi", "ndbi", "gcvi", "bsi"]
+EXTRA_BANDS = ["ndvi", "ndwi", "gcvi", "evi2", "savi", "gndvi", "nbr"]
 
 CLASSIFICATION_BANDS = list(S2_BAND.values()) + EXTRA_BANDS
 
-if "glcm" in CLASSIFICATION_BANDS:
-    CLASSIFICATION_BANDS.remove("glcm")
-    
-    for band in CLASSIFICATION_BANDS:
-        CLASSIFICATION_BANDS.append(f"{band}_contrast")
-        CLASSIFICATION_BANDS.append(f"{band}_diss")
-        CLASSIFICATION_BANDS.append(f"{band}_ent")
-        CLASSIFICATION_BANDS.append(f"{band}_idm")
+date = "2025-11-11"
+
+start, end = interval(date)
 
 mosaic_builder = Mosaic(
-    aoi_path = "cars/MS-5008305-B903C49807354CB0B28BC9BEED9848D1.kml",
-    start_date = "2025-10-28",
-    end_date = "2025-11-18",
+    aoi_path = "cars/PI-2204501-4004DC019E0A484EA143F1F35D50F45F.kml",
+    start_date = "2025-10-11",
+    end_date = "2025-11-11",
     classification_bands = CLASSIFICATION_BANDS,
     extra_index = EXTRA_BANDS
 )
 
-mosaic, collection = mosaic_builder.compute_mosaic()
-
-# só para vizualização do mosaico (opcional)
-#mosaic_builder.export_mosaic(mosaic)
-#mosaic_builder.export_visual(mosaic)
-#mosaic_builder.export_thumbs(collection)
+mosaic = mosaic_builder.compute_mosaic()
 
 image_classifier = Classifier(
     image = mosaic,
     classification_bands = CLASSIFICATION_BANDS,
     trees = 100,
     train_pixels = 10000,
-    region=mosaic_builder.aoi
+    region=mosaic_builder.aoi,
+    train_years=[2024],
 )
 
-first_classified, _region = image_classifier.classify()
-
-image_classifier.reference = first_classified.rename("class")
-
 classified, region = image_classifier.classify()
-
-# só para vizualização da classificação (opcional)
-#image_classifier.export(classified, region)
 
 filters = Filtering(
     image = classified,
@@ -55,5 +40,4 @@ filters = Filtering(
 
 filtered_image = filters.spatial_filter()
 
-# só para vizualização da filtragem (opcional)
 filters.export(filtered_image, region)
