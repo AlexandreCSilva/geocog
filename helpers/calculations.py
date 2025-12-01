@@ -7,8 +7,8 @@ def percentile_mosaic(collection, bands, p):
     
     return ee.Image.cat(out)
 
-# Pega os mosaicos de percentil e usa os de 25% e 75% para preencher lacunas na mediana (50%)
-def combine_percentile(p50, p25, p75):
+# Pega os mosaicos de percentil e usa os de 20% e 80% para preencher lacunas na mediana (50%)
+def combine_percentile(p50, p20, p80):
     def strip(i):
         n = i.bandNames().map(
             lambda x: ee.String(x).replace('_p[0-9]+', '', 'g')
@@ -16,23 +16,23 @@ def combine_percentile(p50, p25, p75):
         return i.rename(n)
         
     p50s = strip(p50)
-    p25s = strip(p25)
-    p75s = strip(p75)
+    p20s = strip(p20)
+    p80s = strip(p80)
     
-    return p50s.unmask(p25s).unmask(p75s)
+    return p50s.unmask(p20s).unmask(p80s)
 
 def calculate_percentile(collection, bands):
     count = collection.size().getInfo()
 
     if count >= 8:
         # Percentil seco
-        m25 = percentile_mosaic(collection, bands, 25)
+        m20 = percentile_mosaic(collection, bands, 20)
         # Percentil médio
         m50 = percentile_mosaic(collection, bands, 50)
         # Percentil úmido
-        m75 = percentile_mosaic(collection, bands, 75)
+        m80 = percentile_mosaic(collection, bands, 80)
 
-        mosaic = combine_percentile(m50, m25, m75)
+        mosaic = combine_percentile(m50, m20, m80)
     
     elif count >= 4:
         # Percentil para poucos mosaicos

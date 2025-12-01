@@ -1,12 +1,14 @@
-from engine import GEEManager, Mosaic, Classifier, Filtering
+from engine import GEEManager, Mosaic, Classifier
 from consts import S2_BAND
 
 gee = GEEManager()
 gee.initialize()
 
-EXTRA_BANDS = ["ndvi", "ndwi", "gcvi", "evi2", "savi", "nbr", "nbr2"]
+EXTRA_BANDS = ["ndvi", "ndwi", "nbr"]
 
 CLASSIFICATION_BANDS = list(S2_BAND.values()) + EXTRA_BANDS
+
+TIME_BANDS = ["blue", "red", "green", "nir", "swir1", "swir2", "ndvi", "nbr"]
 
 mosaic_builder = Mosaic(
     aoi_path = "cars/PI-2204501-4004DC019E0A484EA143F1F35D50F45F.kml",
@@ -18,15 +20,10 @@ mosaic = mosaic_builder.compute_mosaic()
 
 image_classifier = Classifier(
     image = mosaic,
+    classification_bands = CLASSIFICATION_BANDS,
     region=mosaic_builder.aoi,
 )
 
 classified, region = image_classifier.classify()
 
-filters = Filtering(
-    image = classified,
-)
-
-filtered_image = filters.spatial_filter()
-
-filters.export(filtered_image, region)
+image_classifier.export(classified, region)

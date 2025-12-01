@@ -63,6 +63,7 @@ def rename_bands(img, font="SENTINEL2"):
     
     return img.select(BANDS).rename(BANDS_NAMES)
 
+# Por hora nao usada
 def interval(date: str, interval=2):
     date_formated = datetime.strptime(date, "%Y-%m-%d")
     time_interval = timedelta(weeks=interval)

@@ -1,42 +1,17 @@
 import os
-import ee
-import geemap
+import time
+import rasterio
 
-thumbs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output/thumbs")
-os.makedirs(thumbs_dir, exist_ok=True)
+def apply_colormap(path):
+    while not os.path.exists(path):
+        time.sleep(1)
+    
+    colormap = {
+        1: (35, 197, 0),     # verde
+        2: (255, 252, 0),    # amarelo
+        3: (255, 134, 0),    # laranja
+        4: (75, 165, 230),   # azul
+    }
 
-def auto_vis_params(img, bands, region):
-    stats = img.select(bands).reduceRegion(
-        reducer=ee.Reducer.percentile([2, 98]),
-        geometry=region,
-        scale=10,
-        maxPixels=1e9
-    ).getInfo()
-
-    min = []
-    max = []
-
-    for b in bands:
-        min.append(stats[b + "_p2"])
-        max.append(stats[b + "_p98"])
-
-    return min, max
-
-def generate_thumb(img, bands, region, name):
-    min, max = auto_vis_params(img, bands, region)
-
-    thumb = img.visualize(
-        bands,
-        min=min,
-        max=max,
-    )
-
-    thumb_path = os.path.join(thumbs_dir, f"thumb_{name}.tif")
-
-    geemap.ee_export_image(
-        ee_object=thumb,
-        filename=thumb_path,
-        region=region,
-        scale=10,
-        file_per_band=False
-    )
+    with rasterio.open(path, "r+") as dst:
+        dst.write_colormap(1, colormap)

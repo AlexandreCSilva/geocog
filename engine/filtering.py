@@ -1,19 +1,21 @@
 import os
-import time
 import ee
-import geemap
 import rasterio
-from rasterio.plot import reshape_as_raster
-from consts import LAYER_IDS
+import geemap.foliumap as geemap
+from datetime import time
+from consts.layers import LAYER_IDS
+from helpers.visualization import apply_colormap
 
 class Filtering:
     def __init__(
         self,
         image,
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output"),
+        output_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "output/filtered"),
     ):
         self.image = image
         self.output_dir = output_dir
+
+        os.makedirs(self.output_dir, exist_ok=True)
 
     def majority_filter(self, img, param):
         param = ee.Dictionary(param)

@@ -1,22 +1,16 @@
-from engine import GEEManager, Mosaic, Classifier, Filtering
-from consts import S2_BAND
-from helpers import interval
+from engine import GEEManager, Mosaic
+from consts.bands import S2_BAND
 
 gee = GEEManager()
 gee.initialize()
 
-CLASSIFICATION_BANDS = list(S2_BAND.values())
+EXTRA_BANDS = ["ndvi", "ndwi", "gcvi", "evi2", "savi", "nbr", "nbr2", "mndwi", "ndmi"]
 
-date = "2024-11-11"
-
-start, end = interval(date)
+CLASSIFICATION_BANDS = list(S2_BAND.values()) + EXTRA_BANDS
 
 mosaic_builder = Mosaic(
     aoi_path = "cars/PI-2204501-4004DC019E0A484EA143F1F35D50F45F.kml",
-    start_date = "2025-10-11",
-    end_date = "2025-11-11",
     classification_bands = CLASSIFICATION_BANDS,
-    extra_index = []
 )
 
 mosaic = mosaic_builder.compute_mosaic()

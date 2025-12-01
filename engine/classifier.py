@@ -2,19 +2,21 @@ import os
 import ee
 import geemap
 from helpers.reference import make_reference
+from helpers.visualization import apply_colormap
 
 class Classifier:
     def __init__(
-            self,
-            classification_bands,
-            trees,
-            train_pixels,
-            image,
-            region,
-            reference = None,
-            train_years = range(2018, 2024),
-            output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output"),
-        ):
+        self,
+        image,
+        region,
+        classification_bands,
+        trees=100,
+        train_pixels=5000,
+        train_years=[2024],
+        reference=None,
+        grid_size=8000,
+        output_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "output/classifications"),
+    ):
         self.image = image
         self.classification_bands = classification_bands
         self.trees = trees
@@ -23,6 +25,7 @@ class Classifier:
         self.region = region
         self.reference = reference
         self.train_years = train_years
+        self.grid_size = grid_size
 
         os.makedirs(output_dir, exist_ok=True)
 
@@ -30,51 +33,52 @@ class Classifier:
         if not self.reference:
             self.reference = make_reference(years=self.train_years)
 
-        image_ref = self.image.addBands(self.reference)
+        img_ref = self.image.addBands(self.reference)
 
-        samples_list = []
+        samples_fc = ee.FeatureCollection([])
 
         for year in self.train_years:
             class_band = f"class_{year}"
-            
-            sample = image_ref.stratifiedSample(
-                numPoints=self.train_pixels,
-                classBand=class_band,
-                region=self.region,
-                scale=10,
-                geometries=False,
+
+            samples = (
+                img_ref
+                .stratifiedSample(
+                    numPoints=self.train_pixels,
+                    classBand=class_band,
+                    region=self.region,
+                    scale=10,
+                    geometries=False,
+                )
+                .map(lambda f: f.set("class", f.get(class_band)))
             )
-            
-            sample = sample.map(lambda s: s.set("class", s.get(class_band)))
 
-            samples_list.append(sample)
+            samples_fc = samples_fc.merge(samples)
 
-        samples = ee.FeatureCollection(samples_list).flatten()
-
-        classification = ee.Classifier.smileRandomForest(self.trees).train(
-            samples, "class", self.classification_bands
+        classifier = ee.Classifier.smileRandomForest(self.trees).train(
+            samples_fc, "class", self.classification_bands
         )
 
-        # Logs de precisão da classificação (opcional)
-        #self.log_precision(samples, classifier=classification)
-
-        classified = self.image.classify(classification)
+        classified = self.image.classify(classifier)
 
         return classified, self.region
 
     def export(self, classified, region):
-        out_path = os.path.join(self.output_dir, "classification.tif")
+        grid = region.coveringGrid('EPSG:4326', self.grid_size)
 
-        geemap.ee_export_image(
-            ee_object=classified,
-            filename=out_path,
-            region=region,
-            scale=10,
-            file_per_band=False,
-        )
+        for i, f in enumerate(grid.toList(grid.size()).getInfo()):
+            tile = ee.Feature(f).geometry()
+            out_path = os.path.join(self.output_dir, f"classification_{i}.tif")
 
-        return out_path
-    
+            geemap.ee_export_image(
+                ee_object=classified,
+                filename=out_path,
+                region=tile,
+                scale=10,
+                file_per_band=False,
+            )
+
+            apply_colormap(out_path)
+        
     def log_precision(self, samples, classifier):
         samples_random = samples.randomColumn('rand', 42)
 
